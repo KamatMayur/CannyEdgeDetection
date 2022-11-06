@@ -13,8 +13,8 @@ NewImage = 0
 Edges = ced.cannyEdgeDetector(NewImage)
 
 filetypes = [
-    ("PNG", "*.png"),
-    ("All Files", "*.*")
+  
+    ("ALL FILES", "*.*")
 ]
 
 Filebrowser = [
@@ -32,9 +32,9 @@ ImageViewer = [
 ]
 
 layout = [
-    [Filebrowser,
-    sg.VerticalSeparator(),
-    ImageViewer]
+    [sg.Column(Filebrowser, vertical_alignment="top"),
+    sg.VSeperator(),
+    sg.Column(ImageViewer)]
 ]
 window = sg.Window('Image Browser', layout)
 
@@ -49,7 +49,7 @@ while True:
         filename = values["-FILE-"]
         if os.path.exists(filename):
             image = Image.open(values["-FILE-"])
-            image.thumbnail((1000,1000))
+            #image.thumbnail((1000,1000))
             image = ImageOps.grayscale(image)
             NewImage = np.asarray(image)
             Edges.imgs = NewImage

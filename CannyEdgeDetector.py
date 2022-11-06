@@ -5,6 +5,8 @@ from scipy.ndimage import convolve
 from scipy import misc
 import numpy as np
 
+PI = 180
+
 class cannyEdgeDetector:
     def __init__(self, imgs, sigma=1, kernel_size=3, weak_pixel=75, strong_pixel=255, lowthreshold=0.05, highthreshold=0.15):
         self.imgs = imgs
@@ -22,6 +24,7 @@ class cannyEdgeDetector:
         self.highThreshold = highthreshold
         return 
     
+
     def gaussian_kernel(self, size, sigma=1):
         size = int(size) // 2
         x, y = np.mgrid[-size:size+1, -size:size+1]
@@ -51,15 +54,48 @@ class cannyEdgeDetector:
 
         theta = np.empty(shape=mag.shape)
         theta = np.arctan(magy, magx)
-        theta = np.array(theta)
-        theta *= (255/theta.max())
-        theta = theta.astype(np.uint8)
-        print(type(theta))
-        return theta
-
+        theta = np.rad2deg(theta) + 180
+        return (mag, theta)
+  
     
+    def non_max_suppression(self, mag, grad):
+        for i in range(1, mag.shape[0] - 1):
+            for j in range(1, mag.shape[1] - 1):
+
+                direction = grad[i, j]
+        
+                if (0 <= direction < PI / 8) or (15 * PI / 8 <= direction <= 2 * PI):
+                    before_pixel = mag[i, j - 1]
+                    after_pixel = mag[i, j + 1]
+        
+                elif (PI / 8 <= direction < 3 * PI / 8) or (9 * PI / 8 <= direction < 11 * PI / 8):
+                    before_pixel = mag[i + 1, j - 1]
+                    after_pixel = mag[i - 1, j + 1]
+        
+                elif (3 * PI / 8 <= direction < 5 * PI / 8) or (11 * PI / 8 <= direction < 13 * PI / 8):
+                    before_pixel = mag[i - 1, j]
+                    after_pixel = mag[i + 1, j]
+        
+                else:
+                    before_pixel = mag[i - 1, j - 1]
+                    after_pixel = mag[i + 1, j + 1
+                    ]
+                if mag[i, j] <= before_pixel or mag[i, j] <= after_pixel:
+                    mag[i, j] = 0
+     
+        return  mag
+
+
+
+
+
+
+
+
+
     def detect(self):
          
         self.img_smoothed = convolve(self.imgs, self.gaussian_kernel(self.kernel_size, self.sigma))
-        self.gradientMat = self.sobel_gradient(self.img_smoothed)
-        return self.gradientMat
+        self.gradientMat, self.thetaMat = self.sobel_gradient(self.img_smoothed)
+        self.nonMaxImg = self.non_max_suppression(self.gradientMat, self.thetaMat)
+        return self.nonMaxImg
