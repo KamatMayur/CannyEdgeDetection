@@ -8,7 +8,7 @@ import numpy as np
 PI = 180
 
 class cannyEdgeDetector:
-    def __init__(self, imgs, sigma=1, kernel_size=3, weak_pixel=75, strong_pixel=255, lowthreshold=0.05, highthreshold=0.15):
+    def __init__(self, imgs, sigma=1, kernel_size=3, weak_pixel=75, strong_pixel=255, lowthreshold=20, highthreshold=40):
         self.imgs = imgs
         self.imgs_final = []
         self.img_smoothed = None
@@ -25,11 +25,11 @@ class cannyEdgeDetector:
         return 
     
 
-    def gaussian_kernel(self, size, sigma=1):
-        size = int(size) // 2
+    def gaussian_kernel(self):
+        size = int(self.kernel_size) // 2
         x, y = np.mgrid[-size:size+1, -size:size+1]
-        normal = 1 / (2.0 * np.pi * sigma**2)
-        g =  np.exp(-((x**2 + y**2) / (2.0*sigma**2))) * normal
+        normal = 1 / (2.0 * np.pi * self.sigma**2)
+        g =  np.exp(-((x**2 + y**2) / (2.0*self.sigma**2))) * normal
         return g
     
     def sobel_gradient(self, imgs):
@@ -53,7 +53,7 @@ class cannyEdgeDetector:
         mag = mag.astype(np.uint8)
 
         theta = np.empty(shape=mag.shape)
-        theta = np.arctan(magy, magx)
+        theta = np.arctan2(magy, magx)
         theta = np.rad2deg(theta) + 180
         return (mag, theta)
   
@@ -78,8 +78,7 @@ class cannyEdgeDetector:
         
                 else:
                     before_pixel = mag[i - 1, j - 1]
-                    after_pixel = mag[i + 1, j + 1
-                    ]
+                    after_pixel = mag[i + 1, j + 1]
                 if mag[i, j] <= before_pixel or mag[i, j] <= after_pixel:
                     mag[i, j] = 0
      
@@ -88,14 +87,34 @@ class cannyEdgeDetector:
 
 
 
+    def threshold(self, image):
+        
+        output = np.zeros(image.shape).astype(np.uint8)
+        strong_row, strong_col = np.where(image >= self.highThreshold)
+        weak_row, weak_col = np.where((image <= self.highThreshold) & (image >= self.lowThreshold))
+    
+        output[strong_row, strong_col] = self.strong_pixel
+        output[weak_row, weak_col] = self.weak_pixel
+    
+        return output
 
+    def hysteresis(self, image):
+        row, col = image.shape
+        for i in range(1, row-1):
+            for j in range(1, col-1):
+                if image[i, j] == self.weak_pixel:
+                    if image[i, j + 1] == 255 or image[i, j - 1] == 255 or image[i - 1, j] == 255 or image[i + 1, j] == 255 or image[i - 1, j - 1] == 255 or image[i + 1, j - 1] == 255 or image[i - 1, j + 1] == 255 or image[i + 1, j + 1] == 255:
+                        image[i, j] = 255
+                    else:
+                        image[i, j] = 0
 
-
-
+        return image
 
     def detect(self):
          
-        self.img_smoothed = convolve(self.imgs, self.gaussian_kernel(self.kernel_size, self.sigma))
+        self.img_smoothed = convolve(self.imgs, self.gaussian_kernel())
         self.gradientMat, self.thetaMat = self.sobel_gradient(self.img_smoothed)
         self.nonMaxImg = self.non_max_suppression(self.gradientMat, self.thetaMat)
-        return self.nonMaxImg
+        self.thresholdImg = self.threshold(self.nonMaxImg)
+        self.img_final = self.hysteresis(self.thresholdImg)
+        return self.img_final
