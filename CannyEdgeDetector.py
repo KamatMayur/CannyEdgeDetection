@@ -1,8 +1,4 @@
-from cmath import inf
-from scipy import ndimage
 from scipy.ndimage import convolve
-
-from scipy import misc
 import numpy as np
 
 PI = 180
@@ -100,14 +96,19 @@ class cannyEdgeDetector:
 
     def hysteresis(self, image):
         row, col = image.shape
-        for i in range(1, row-1):
-            for j in range(1, col-1):
-                if image[i, j] == self.weak_pixel:
-                    if image[i, j + 1] == 255 or image[i, j - 1] == 255 or image[i - 1, j] == 255 or image[i + 1, j] == 255 or image[i - 1, j - 1] == 255 or image[i + 1, j - 1] == 255 or image[i - 1, j + 1] == 255 or image[i + 1, j + 1] == 255:
-                        image[i, j] = 255
-                    else:
-                        image[i, j] = 0
-
+        for i in range(row):
+            for j in range(col):
+                if i == 0 or j  == 0 or i == row-1 or j == col-1:
+                    if image[i, j] == self.weak_pixel:
+                        image[i][j] = 0
+                       
+                else:
+                    if image[i, j] == self.weak_pixel:
+                        if image[i, j + 1] == 255 or image[i, j - 1] == 255 or image[i - 1, j] == 255 or image[i + 1, j] == 255 or image[i - 1, j - 1] == 255 or image[i + 1, j - 1] == 255 or image[i - 1, j + 1] == 255 or image[i + 1, j + 1] == 255:
+                            image[i, j] = 255
+                        else:
+                            image[i, j] = 0
+                    
         return image
 
     def detect(self):
